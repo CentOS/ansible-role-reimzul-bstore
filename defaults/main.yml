@@ -1,0 +1,22 @@
+# Default variables for reimzul-bstore role
+
+# Where to store all artifacts - packages, srpms, log, mock config files
+reimzul_bstore_dir: /srv/reimzul/bstore
+
+# default uid/gid fir incomging rsyncd (through tls/stunnel)
+reimzul_rsyncd_uid: reimzul
+reimzul_rsyncd_gid: reimzul
+
+# List of repositories
+reimzul_bstore_repos:
+  - 6.4
+  - 6.4-updates
+  - 6.5
+  - c7.1708.00
+  - c7.1708.00.a64
+  - c7.1708.00.a32
+  - c7.1708.00.ppc64le
+
+
+# Number of repogen workers to start
+reimzul_repogen_workers_number: 3

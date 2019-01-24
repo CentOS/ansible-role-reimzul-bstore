@@ -1,0 +1,166 @@
+- name: Ensuring stunnel pkg is installed
+  yum:
+    name: stunnel
+    state: latest
+
+- name: Configuring stunnel
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/stunnel/{{ item }}"
+    owner: root
+    group: root
+    mode: 0600
+  with_items:
+    - stunnel.conf
+    - reimzul-clients.psk
+    - reimzul-client.psk
+  notify: restart_stunnel
+
+- name: Adding stunnel to systemd
+  copy:
+    src: files/stunnel.service
+    dest: /etc/systemd/system/stunnel.service
+    owner: root
+  register: stunnel_systemd
+
+- name: Reloading systemd if needed
+  shell: /usr/bin/systemctl daemon-reload
+  when: stunnel_systemd is changed
+
+- name: Ensuring stunnel is enabled and started
+  service: 
+    name: stunnel 
+    state: started 
+    enabled: yes
+
+- name: Configuring iptables rules
+  include_role:
+    name: iptables
+    tasks_from: custom-policy
+  vars:
+    iptables_policy_name: stunnel-rsyncd
+    iptables_protocol: tcp
+    iptables_port: "11874"
+    iptables_source: "0.0.0.0/0"
+  tags:
+    - iptables
+
+- name: Ensuring reimzul user exists
+  user:
+    name: reimzul
+    state: present
+    comment: "Reimzul Build System"
+    shell: /bin/bash
+
+- name: Ensuring incoming directory exists
+  file:
+    path: "{{ reimzul_bstore_dir }}"
+    state: directory
+    owner: reimzul
+    group: reimzul
+    setype: public_content_rw_t
+
+- name: Ensuring subdirectories for each repo exist
+  file:
+    path: "{{ reimzul_bstore_dir }}/repo/{{ item }}"
+    state: directory
+    owner: reimzul
+    group: reimzul
+    setype: public_content_rw_t
+  with_items: "{{ reimzul_bstore_repos }}"  
+
+- name: Configuring incoming rsyncd
+  template:
+    src: rsyncd-reimzul-bstore.conf.j2
+    dest: /etc/rsyncd.d/02_reimzul-bstore.conf
+  notify: rebuild_rsyncd
+
+- name: Ensuring rsyncd selinux boolean is turned to allow incoming
+  seboolean:
+    name: rsync_anon_write 
+    state: yes
+    persistent: yes
+
+- name: Configuring iptables rules
+  include_role:
+    name: iptables
+    tasks_from: custom-policy
+  vars:
+    iptables_policy_name: stunnel-httpd
+    iptables_protocol: tcp
+    iptables_port: "11081"
+    iptables_source: "0.0.0.0/0"
+  tags:
+    - iptables
+
+- name: Configuring httpd (through stunnel) 
+  template:
+    src: httpd-03_reimzul-bstore.conf.j2
+    dest: /etc/httpd/conf.d/03_reimzul-bstore.conf
+  notify: restart_httpd   
+
+- name: Ensuring some pkgs are installed
+  yum:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - createrepo_c
+    - python-beanstalkc
+    - PyYAML
+
+- name: Ensuring reimzul can log to file
+  file:
+    path: /var/log/reimzul
+    state: directory
+    owner: reimzul
+    group: reimzul
+
+- name: Ensuring we can clone reimzul code
+  yum:
+    name: git
+    state: installed
+
+- name: Ensuring we have reimzul code locally
+  git:
+    repo: http://localhost:11080/git/reimzul.git
+    dest: /srv/reimzul/code
+    clone: yes
+  become_user: reimzul  
+  tags:
+    - git
+
+- name: Adding reimzul bstore to systemd
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+  register: reimzul_worker_systemd
+  with_items:
+    - reimzul-repogen-worker@.service
+    - reimzul-signer.service
+  tags:
+    - systemd
+
+- name: Reloading systemd if needed
+  shell: /usr/bin/systemctl daemon-reload
+  when: reimzul_worker_systemd is changed
+  tags:
+    - systemd
+
+- name: Ensuring reimzul repogen worker[s] is/are started
+  service:
+    name: "reimzul-repogen-worker@{{ item }}"
+    state: started
+    enabled: True
+  with_sequence: count={{ reimzul_repogen_workers_number }}
+  tags:
+    - systemd
+
+- name: Ensuring reimzul signer worker[s] is/are started
+  service:
+    name: reimzul-signer
+    state: started
+    enabled: True
+  tags:
+    - systemd
+

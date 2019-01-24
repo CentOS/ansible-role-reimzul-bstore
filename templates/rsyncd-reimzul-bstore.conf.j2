@@ -1,0 +1,16 @@
+[reimzul-bstore]
+  path={{ reimzul_bstore_dir }}
+  comment=Reimzul bstore directory
+  list=yes
+  read only = no
+  host allow = 127.0.0.1
+  host deny = *
+
+{% for repo in reimzul_bstore_repos %}
+[{{ repo }}]
+  read only = no
+  host allow = 127.0.0.1
+  host deny = *
+  path = {{ reimzul_bstore_dir }}/repo/{{ repo }}
+
+{% endfor %}

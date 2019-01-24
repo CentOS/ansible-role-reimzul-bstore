@@ -1,0 +1,38 @@
+sslVersion = TLSv1
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+;foreground = yes
+debug = info
+output = /var/log/stunnel.log
+
+[rsyncd]
+accept = 11874
+connect = 873
+TIMEOUTclose = 0
+ciphers = PSK
+PSKsecrets = /etc/stunnel/reimzul-clients.psk
+
+[httpd]
+accept = 11081
+connect = 80
+TIMEOUTclose = 0
+ciphers = PSK
+PSKsecrets = /etc/stunnel/reimzul-clients.psk
+
+[controller_beanstalkd]
+client = yes
+accept = 127.0.0.1:11300
+connect = {{ reimzul_controller }}:13100
+TIMEOUTclose = 0
+TIMEOUTidle = 31536000
+ciphers = PSK
+PSKsecrets = /etc/stunnel/reimzul-client.psk
+
+[controller_httpd]
+client = yes
+accept = 11080
+connect = {{ reimzul_controller }}:11080
+TIMEOUTclose = 0
+ciphers = PSK
+PSKsecrets = /etc/stunnel/reimzul-client.psk
+
