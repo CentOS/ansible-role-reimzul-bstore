@@ -164,3 +164,13 @@
   tags:
     - systemd
 
+- include_role:
+    name: postfix
+    tasks_from: relay_to
+  when: reimzul_send_announce_mails
+
+- name: Install some mail helpers
+  yum:
+    name: mutt
+    state: latest
+  when: reimzul_send_announce_mails  

@@ -20,3 +20,6 @@ reimzul_bstore_repos:
 
 # Number of repogen workers to start
 reimzul_repogen_workers_number: 3
+
+# Do we want to send some announce mails from bstore node ?
+reimzul_send_announce_mails: True
