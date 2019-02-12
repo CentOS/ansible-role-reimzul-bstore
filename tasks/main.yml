@@ -60,6 +60,14 @@
     group: reimzul
     setype: public_content_rw_t
 
+- name: Ensuring repodata cache  directory exists
+  file:
+    path: "{{ reimzul_bstore_dir }}/cache"
+    state: directory
+    owner: reimzul
+    group: reimzul
+    setype: public_content_rw_t
+
 - name: Ensuring subdirectories for each repo exist
   file:
     path: "{{ reimzul_bstore_dir }}/repo/{{ item }}"
