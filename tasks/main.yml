@@ -181,4 +181,11 @@
   yum:
     name: mutt
     state: latest
-  when: reimzul_send_announce_mails  
+  when: reimzul_send_announce_mails 
+
+# Backup
+- name: Ensuring backup user and jobs
+  include_role:
+    name: centos-backup
+    tasks_from: client
+  
