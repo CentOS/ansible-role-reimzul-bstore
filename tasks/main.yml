@@ -108,6 +108,7 @@
   template:
     src: httpd-03_reimzul-bstore.conf.j2
     dest: /etc/httpd/conf.d/03_reimzul-bstore.conf
+    mode: 0644
   notify: restart_httpd   
 
 - name: Ensuring some pkgs are installed
